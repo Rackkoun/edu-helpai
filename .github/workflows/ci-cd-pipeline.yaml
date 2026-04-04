@@ -1,0 +1,13 @@
+name: Edu-HelpAI CI/CD
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Welcome to Edu-HelpAI \[o_o]/"
