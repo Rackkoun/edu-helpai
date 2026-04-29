@@ -144,9 +144,15 @@ ENV/
 env.bak/
 venv.bak/
 .eduenv
+.env.local
+.env.production
 # Spyder project settings
 .spyderproject
 .spyproject
+
+# secrets and local config
+.env.*
+!.env.example
 
 # Rope project settings
 .ropeproject
@@ -205,3 +211,22 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+data/
+uploads/
+mlruns/
+mlartifacts/
+*.db
+
+.vscode/
+.DS_Store
+Thumbs.db
+
+# chainlit
+<<<<<<< HEAD
+chainlit.md
+.chainlit/
+=======
+.chainlit/
+chainlit.md
+>>>>>>> b89457a (feat: frontend implemented)
