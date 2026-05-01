@@ -1,10 +1,11 @@
 # file src/frontend/app.py
 """
-    Edu-HelpAI UI
+Edu-HelpAI UI
 
-    RUN with chainlit src/frontend/app.py --port 8001
+RUN with chainlit src/frontend/app.py --port 8001
 """
 
+from typing import Any
 import uuid
 import httpx
 import chainlit as cl
@@ -17,7 +18,7 @@ API_BASE = "http://localhost:8000"
 #  LIFECYCLE
 # -----------------------------------
 @cl.on_chat_start
-async def on_chat_start():
+async def on_chat_start() -> None:
     """Runs once whe a user opens the chat"""
     session_id = str(uuid.uuid4())
     cl.user_session.set("session_id", session_id)
@@ -26,10 +27,11 @@ async def on_chat_start():
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{API_BASE}/documents/")
         docs = resp.json() if resp.is_success else []
-    
-    doc_list = "\n".join(
-        f"  • **{d['filename']}** ({d['chunk_count']} chunks)" for d in docs
-    ) or "  *(none yet)*"
+
+    doc_list = (
+        "\n".join(f"  • **{d['filename']}** ({d['chunk_count']} chunks)" for d in docs)
+        or "  *(none yet)*"
+    )
 
     await cl.Message(
         content=(
@@ -41,11 +43,12 @@ async def on_chat_start():
         )
     ).send()
 
+
 # ------------------------------------
 # FILE UPLOAD
 # ------------------------------------
 @cl.on_message
-async def on_message(message: cl.Message):
+async def on_message(message: cl.Message) -> None:
     session_id = cl.user_session.get("session_id")
 
     # handle attached files first
@@ -53,15 +56,16 @@ async def on_message(message: cl.Message):
         for element in message.elements:
             if hasattr(element, "path"):
                 await _handle_file_upload(element)
-        
+
         # if message has only files (no text questions) stop here
         if not message.content.strip():
             return
-    
+
     # otherwise treat as question
     await _handle_chat(message.content, session_id)
 
-async def _handle_file_upload(element) -> None:
+
+async def _handle_file_upload(element: Any) -> None:
     """Upload a file to the backend and trigger embedding"""
     filename = element.name
     status_msg = cl.Message(content=f"⏳ Processing **{filename}**...")
@@ -69,7 +73,7 @@ async def _handle_file_upload(element) -> None:
 
     with open(element.path, "rb") as f:
         file_bytes = f.read()
-    
+
     # detect content type from extension
     ext = filename.rsplit(".", 1)[-1].lower()
     mime_map = {
@@ -84,27 +88,35 @@ async def _handle_file_upload(element) -> None:
         # 1. upload + chunk
         upload_resp = await client.post(
             f"{API_BASE}/documents/upload",
-            files={"file": (filename, file_bytes, content_type)}
+            files={"file": (filename, file_bytes, content_type)},
         )
         if not upload_resp.is_success:
-            await status_msg.update(content=f"❌ Upload failed: {upload_resp.text}")
+            status_msg.content = f"❌ Upload failed: {upload_resp.text}"
+            await status_msg.update()
             return
-        
+
         data = upload_resp.json()
         doc_id = data["id"]
         chunk_count = data["chunk_count"]
 
-        await status_msg.update(
-            content=f"⏳ Uploaded **{filename}** ({chunk_count} chunks). Generating embeddings..."
+        status_msg.content = (
+            f"⏳ Uploaded **{filename}** ({chunk_count} chunks). "
+            "Generating embeddings..."
         )
+        await status_msg.update()
 
         # 2. generate embeddings
         embed_resp = await client.post(f"{API_BASE}/documents/{doc_id}/embed")
         if not embed_resp.is_success:
-            await status_msg.update(content=f"❌ Embedding failed: {embed_resp.text}")
+            status_msg.content = f"❌ Embedding failed: {embed_resp.text}"
+            await status_msg.update()
             return
-    
-    await status_msg.update(content=f"✅ **{filename}** added to knowledge base ({chunk_count} chunks). Ask away!")
+
+    status_msg.content = (
+        f"✅ **{filename}** added to knowledge base ({chunk_count} chunks). "
+        "Ask away!"
+    )
+    await status_msg.update()
 
 
 # -------------------------------------------
@@ -117,13 +129,15 @@ async def _handle_chat(user_message: str, session_id: str) -> None:
 
     async with httpx.AsyncClient(timeout=180.0) as client:
         async with client.stream(
-            "POST", f"{API_BASE}/chat/message",
+            "POST",
+            f"{API_BASE}/chat/message",
             json={"message": user_message, "session_id": session_id},
         ) as resp:
             if not resp.is_success:
-                await answer_msg.update(content="❌ Backend error. Is the API running?")
+                answer_msg.content = "❌ Backend error. Is the API running?"
+                await answer_msg.update()
                 return
-            
+
             async for line in resp.aiter_lines():
                 if not line.startswith("data: "):
                     continue

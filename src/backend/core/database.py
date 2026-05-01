@@ -1,17 +1,16 @@
 # src/backend/core/database.py
-import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import (
-    AsyncSession, async_sessionmaker,
-    create_async_engine
-)
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 from src.backend.config import settings
 
+
 # base class for all models
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
+
 
 # ceate async engine
 if settings.DATABASE_URL.startswith("sqlite"):
@@ -20,11 +19,7 @@ if settings.DATABASE_URL.startswith("sqlite"):
 else:
     db_url = settings.DATABASE_URL
 
-engine = create_async_engine(
-    db_url,
-    echo=settings.DB_ECHO,
-    future=True
-)
+engine = create_async_engine(db_url, echo=settings.DB_ECHO, future=True)
 
 # session factory
 async_session_maker = async_sessionmaker(
@@ -32,8 +27,9 @@ async_session_maker = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,  # prevent expired obj errors
     autocommit=False,
-    autoflush=False
+    autoflush=False,
 )
+
 
 async def init_db() -> None:
     """create all tables on startup"""
@@ -50,7 +46,7 @@ async def close_db() -> None:
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Get database session for dependency injection
-    
+
     Usage:
         async with get_session() as session:
             session.add(obj)
@@ -65,6 +61,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
 
 # for fastapi depends
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

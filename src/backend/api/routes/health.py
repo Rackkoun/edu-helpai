@@ -5,10 +5,11 @@ from src.backend.config import settings
 
 router = APIRouter()
 
+
 @router.get("/")
-async def health_check():
+async def health_check() -> dict[str, str]:
     return {
         "status": "ok",
         "app": settings.APP_NAME,
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
     }

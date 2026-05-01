@@ -14,6 +14,7 @@ UPLOADS_DIR = DATA_DIR / "uploads"
 DATA_DIR.mkdir(exist_ok=True)
 UPLOADS_DIR.mkdir(exist_ok=True)
 
+
 class Settings(BaseSettings):
     """
     App configuration
@@ -68,11 +69,12 @@ class Settings(BaseSettings):
             )
         return v
     model_config = SettingsConfigDict(
-        env_file=ROOT_DIR / ".env", # load from .env file
+        env_file=ROOT_DIR / ".env",  # load from .env file
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",  # allow extra env vars without error
     )
+
 
 @lru_cache()
 def get_settings() -> Settings:
@@ -80,5 +82,6 @@ def get_settings() -> Settings:
     Get cached settings instance.
     """
     return Settings()
+
 
 settings = get_settings()

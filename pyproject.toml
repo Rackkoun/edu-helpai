@@ -60,10 +60,24 @@ strict = true
 warn_return_any = true
 warn_unused_ignores = true
 
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+disallow_any_generics = false
+warn_return_any = false
+warn_unused_ignores = false
+
+[[tool.mypy.overrides]]
+module = ["src.frontend.*"]
+disallow_untyped_calls = false
+warn_return_any = false
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = "test_*.py"
-addopts = "--cov=backend --cov=report-term-missing --cov-fail-under=90"
+asyncio_mode="strict"
+addopts = "--cov=src/backend --cov-report=term-missing --cov-fail-under=90"
 
 [tool.coverage.run]
 source = ["backend"]

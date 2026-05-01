@@ -22,10 +22,12 @@ from src.backend.models.document import Conversation, DocumentChunk
 from src.backend.services.embedding import EmbeddingService
 from src.backend.config import settings
 
+
 def _bytes_to_vector(blob: bytes) -> np.ndarray:
-    """ Deserialize float32 bytes -> numpy array"""
+    """Deserialize float32 bytes -> numpy array"""
     n = len(blob) // 4
     return np.array(struct.unpack(f"{n}f", blob), dtype=np.float32)
+
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     """Cosine similarity between two 1D-vectors"""
@@ -49,16 +51,16 @@ class RAGService:
     def __init__(self) -> None:
         self.embedding_svc = EmbeddingService()
         self.client = httpx.AsyncClient(timeout=settings.OLLAMA_TIMEOUT)
-    
+
     # --------------------------------------------------------------
     # PUBLIC API
     # --------------------------------------------------------------
-    async def query(self, user_message: str, session_id: str, tok_k: int | None = None) -> AsyncGenerator[str, None]:
-        
-        top_k = tok_k or settings.RAG_TOP_K
+    async def query(
+        self, user_message: str, session_id: str, tok_k: int | None = None
+    ) -> AsyncGenerator[str, None]:
 
         # 1. retrieve relevant chunks
-        chunks = await self._retrieve(user_message, tok_k)
+        chunks = await self._retrieve(user_message, tok_k or settings.RAG_TOP_K)
 
         # 2. build context string
         context = self._build_context(chunks)
@@ -74,16 +76,19 @@ class RAGService:
         async for token in self._stream_ollama(user_message, context, history):
             full_response += token
             yield token
-        
+
         # 6. save assistant turn + source chunk references
         source_ids = [str(c.id) for c in chunks]
-        await self._save_turn(session_id, "assistant", full_response, source_chunks=json.dumps(source_ids))
-    
-    async def get_source_chunks(self, user_message: str, top_k: int | None = None) -> List[DocumentChunk]:
+        await self._save_turn(
+            session_id, "assistant", full_response, source_chunks=json.dumps(source_ids)
+        )
+
+    async def get_source_chunks(
+        self, user_message: str, top_k: int | None = None
+    ) -> List[DocumentChunk]:
         """Return the chunks that will be used for a query"""
-        top_k = top_k or settings.RAG_TOP_K
-        return await self._retrieve(user_message, top_k)
-    
+
+        return await self._retrieve(user_message, top_k or settings.RAG_TOP_K)
 
     # --------------------------------------------------------
     # INTERNAL HELPERS
@@ -97,20 +102,20 @@ class RAGService:
                 select(DocumentChunk).where(DocumentChunk.embedding != b"")
             )
             all_chunks = result.scalars().all()
-        
+
         if not all_chunks:
             return []
-        
+
         # compute cosine similarity for every chunks
         scored: List[Tuple[float, DocumentChunk]] = []
         for chunk in all_chunks:
             vec = _bytes_to_vector(chunk.embedding)
             score = _cosine_similarity(query_vec, vec)
             scored.append((score, chunk))
-        
+
         scored.sort(key=lambda x: x[0], reverse=True)
         return [chunk for _, chunk in scored[:top_k]]
-    
+
     def _build_context(self, chunks: List[DocumentChunk]) -> str:
         """Format retrieved chunks into a context block for the prompt"""
         if not chunks:
@@ -119,16 +124,20 @@ class RAGService:
         for i, chunk in enumerate(chunks, 1):
             parts.append(f"[Source {i} - chunk_id={chunk.id}]\n{chunk.content}")
         return "\n\n---\n\n".join(parts)
-    
-    async def _stream_ollama(self, user_message: str, context: str, history: List[dict]) -> AsyncGenerator[str, None]:
+
+    async def _stream_ollama(
+        self, user_message: str, context: str, history: List[dict[str, str]]
+    ) -> AsyncGenerator[str, None]:
         """Stream tokens from Ollama /api/chat endpoint"""
         messages = [{"role": "system", "content": self.SYSTEM_PROMPT}]
 
         # inject retrieved context
-        messages.append({
-            "role": "system",
-            "content": f"RELEVANT CONTEXT:\n{context}",
-        })
+        messages.append(
+            {
+                "role": "system",
+                "content": f"RELEVANT CONTEXT:\n{context}",
+            }
+        )
 
         # recent conversation turns
         messages.extend(history)
@@ -141,7 +150,7 @@ class RAGService:
             "model": settings.OLLAMA_MODEL,
             "messages": messages,
             "stream": True,
-            "options": {"num_predict": settings.MAX_TOKENS}
+            "options": {"num_predict": settings.MAX_TOKENS},
         }
 
         async with self.client.stream("POST", url, json=payload) as resp:
@@ -155,8 +164,10 @@ class RAGService:
                     yield token
                 if data.get("done"):
                     break
-    
-    async def _load_history(self, session_id: str, limit: int = 6) -> List[dict]:
+
+    async def _load_history(
+        self, session_id: str, limit: int = 6
+    ) -> List[dict[str, str]]:
         """Load the last N conversation turns"""
         async with get_session() as session:
             from sqlalchemy import desc
@@ -169,22 +180,24 @@ class RAGService:
                 .limit(limit)
             )
             rows = result.scalars().all()
-        
+
         # reverse to chronological order
         return [{"role": r.role, "content": r.content} for r in reversed(rows)]
-    
-    async def _save_turn(self, session_id: str, role: str, content: str, source_chunks: str | None = None) -> None:
+
+    async def _save_turn(
+        self, session_id: str, role: str, content: str, source_chunks: str | None = None
+    ) -> None:
         """Persist a conversation turn to the db"""
         async with get_session() as session:
             turn = Conversation(
                 session_id=session_id,
                 role=role,
                 content=content,
-                source_chunks=source_chunks
+                source_chunks=source_chunks,
             )
             session.add(turn)
             await session.commit()
-    
+
     async def close(self) -> None:
         await self.client.aclose()
         await self.embedding_svc.close()
