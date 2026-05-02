@@ -1,6 +1,13 @@
 # file test/conftest.py
 
 """Shared fixtures for the whole test suite"""
+import os
+# default secret
+os.environ.setdefault("ENVIRONMENT", "test")
+os.environ.setdefault(
+    "SECRET_KEY",
+    "test-secret-key-only-for-ci-cd-not-real-value"
+)
 
 import asyncio
 import pytest

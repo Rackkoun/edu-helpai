@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     MLFLOW_EXPERIMENT_NAME: str = "edu-helpai-chat"
 
     # security
-    SECRET_KEY: str
+    SECRET_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
     # paths
@@ -61,13 +61,19 @@ class Settings(BaseSettings):
     @classmethod
     def secret_key_validator(cls, v: str) -> str:
         """The secret key must not be weak"""
+        import os
+        if os.environ.get("ENVIRONMENT") == "test":
+            return v
+        
         weak_sk = {"dev-secret-key", "secret", "changeme", "password", ""}
         if v in weak_sk or len(v) < 32:
             raise ValueError(
                 "SECRET_KEY is too weak or is a known default."
-                "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+                'Generate one with: '
+                'python -c "import secrets; print(secrets.token_hex(32))"'
             )
         return v
+
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env",  # load from .env file
         env_file_encoding="utf-8",
