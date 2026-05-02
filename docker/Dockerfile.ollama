@@ -1,0 +1,9 @@
+# Dockerfile.ollama
+
+# extend the official ollama image with curl for healthchecks
+# clean apt cache to keep image small
+FROM ollama/ollama:latest
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
