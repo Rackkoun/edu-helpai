@@ -1,0 +1,68 @@
+# file k8s/backend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: edu-helpai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: edu-helpai-backend:latest
+        imagePullPolicy: Never  # use local minikube image
+        ports:
+          - containerPort: 8000
+        envFrom:
+          - configMapRef:
+              name: edu-config
+        env:
+          - name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                key: SECRET_KEY
+                name: edu-secrets
+        volumeMounts:
+          - name: app-data
+            mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /health/
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: app-data-pvc
+---
+piVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: edu-helpai
+spec:
+  selector:
+    app: backend
+  # template:
+  #   metadata:
+  #     labels:
+  #       app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+

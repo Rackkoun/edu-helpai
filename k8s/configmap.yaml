@@ -1,0 +1,11 @@
+# file k8s/configMap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edu-config
+  namespace: edu-helpai
+data:
+  OLLAMA_URL: "http://ollama-service:11434"
+  DATABASE_URL: "sqlite:////data/edu_helpai.db"
+  MLFLOW_TRACKING_URI: "sqlite:////data/mlflow.db"
+  ENVIRONMENT: "production"

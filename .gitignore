@@ -223,10 +223,8 @@ mlartifacts/
 Thumbs.db
 
 # chainlit
-<<<<<<< HEAD
 chainlit.md
 .chainlit/
-=======
-.chainlit/
-chainlit.md
->>>>>>> b89457a (feat: frontend implemented)
+
+# others
+.files/
