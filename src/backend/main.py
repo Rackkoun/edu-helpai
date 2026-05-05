@@ -31,7 +31,10 @@ app = FastAPI(title=settings.APP_NAME, version="0.1.0", lifespan=lifespan)
 # allow chainlit (on different port) to call API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://localhost:8001"],
+    allow_origins=[
+        "http://localhost:8000", "http://localhost:8001",
+        "http://backend:8000", "http://frontend:8001",  # Docker internal
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -37,7 +37,7 @@ async def chat_message(request: ChatRequest) -> StreamingResponse:
         try:
             async for token in rag.query(request.message, session_id):
                 full += token
-                yield f"date: {token}\n\n"
+                yield f"data: {token}\n\n"
         finally:
             await rag.close()
             # mlflow non blocking log

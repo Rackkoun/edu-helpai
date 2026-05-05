@@ -1,13 +1,12 @@
 # file test/conftest.py
-
+# flake8: noqa: E402
 """Shared fixtures for the whole test suite"""
+
 import os
+
 # default secret
 os.environ.setdefault("ENVIRONMENT", "test")
-os.environ.setdefault(
-    "SECRET_KEY",
-    "test-secret-key-only-for-ci-cd-not-real-value"
-)
+os.environ.setdefault("SECRET_KEY", "test-secret-key-only-for-ci-cd-not-real-value")
 
 import asyncio
 import pytest

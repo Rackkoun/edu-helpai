@@ -1,4 +1,4 @@
-# file k8s/configMap.yaml
+# file k8s/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,3 +9,5 @@ data:
   DATABASE_URL: "sqlite:////data/edu_helpai.db"
   MLFLOW_TRACKING_URI: "sqlite:////data/mlflow.db"
   ENVIRONMENT: "production"
+  OLLAMA_MODEL: "mistral:7b"
+  EMBEDDING_MODEL: "nomic-embed-text"

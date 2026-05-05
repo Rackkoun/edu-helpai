@@ -1,22 +1,21 @@
-# file k8s/ollama-deployment.yaml
-# CPU version only (default)
+# file k8s/ollama-gpu-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ollama
+  name: ollama-gpu
   namespace: edu-helpai
   labels:
     app: ollama
-    profile: cpu
+    profile: gpu
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ollama
+      app: ollama-gpu
   template:
     metadata:
       labels:
-        app: ollama
+        app: ollama-gpu
     spec:
       containers:
         - name: ollama
@@ -26,19 +25,12 @@ spec:
           volumeMounts:
             - name: ollama-models
               mountPath: /root/.ollama
-          readinessProbe:
-            httpGet:
-              path: /api/tags
-              port: 11434
-            initialDelaySeconds: 20
-            periodSeconds: 10
           resources:
-            requests:
-              memory: "2Gi"
-              cpu: "1"
             limits:
-              memory: "8Gi"
-              cpu: "4"
+              nvidia.com/gpu: 1  # request 1 GPU
+            requests:
+              memory: "4Gi"
+              cpu: "2"
       volumes:
         - name: ollama-models
           persistentVolumeClaim:
@@ -51,7 +43,7 @@ metadata:
   namespace: edu-helpai
 spec:
   selector:
-    app: ollama
+    app: ollama-gpu
   ports:
     - port: 11434
       targetPort: 11434

@@ -153,6 +153,7 @@ venv.bak/
 # secrets and local config
 .env.*
 !.env.example
+k8s/secrets.yaml
 
 # Rope project settings
 .ropeproject

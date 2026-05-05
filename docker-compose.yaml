@@ -12,11 +12,11 @@ services:
     ports:
       - "11434:11434"
     healthcheck:
-      test: ["CMD", "curl", "-f", http://localhost:11434/api/tags"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 600s  # wait before first check
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s  # wait before first check
   
   # Ollama GPU: only when --profile gpu is passed
   ollama-gpu:
@@ -38,10 +38,10 @@ services:
               capabilities: [gpu]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 600s
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
   # FastAPI backend
   backend:
     build:
@@ -52,7 +52,7 @@ services:
       - .env  # read local .env file
     environment:  # override specific vars for the container network
       - OLLAMA_URL=http://ollama:11434
-      - DATABASE_URL=sqlite:///app/data/edu_helpai.db
+      - DATABASE_URL=sqlite:////app/data/edu_helpai.db
       - MLFLOW_TRACKING_URI=sqlite:////app/data/mlflow.db
     volumes:
       - app_data:/app/data

@@ -62,14 +62,15 @@ class Settings(BaseSettings):
     def secret_key_validator(cls, v: str) -> str:
         """The secret key must not be weak"""
         import os
+
         if os.environ.get("ENVIRONMENT") == "test":
             return v
-        
+
         weak_sk = {"dev-secret-key", "secret", "changeme", "password", ""}
         if v in weak_sk or len(v) < 32:
             raise ValueError(
                 "SECRET_KEY is too weak or is a known default."
-                'Generate one with: '
+                "Generate one with: "
                 'python -c "import secrets; print(secrets.token_hex(32))"'
             )
         return v

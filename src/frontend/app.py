@@ -4,14 +4,20 @@ Edu-HelpAI UI
 
 RUN with chainlit src/frontend/app.py --port 8001
 """
+# flake8: noqa: E402
+import os
 
+# remove database url from the frontend so chainlit it from the backend
+os.environ.pop("DATABASE_URL", None)
+# disable literalai
+os.environ.pop("LITERAL_API_KEY", None)
 from typing import Any
 import uuid
 import httpx
 import chainlit as cl
 
 #  FastAPI backend
-API_BASE = "http://localhost:8000"
+API_BASE = os.environ.get("API_BASE", "http://localhost:8000")
 
 
 # -----------------------------------
