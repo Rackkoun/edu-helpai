@@ -15,10 +15,16 @@ from typing import Any
 import uuid
 import httpx
 import chainlit as cl
+from chainlit.server import app
+from fastapi.responses import PlainTextResponse
 
 #  FastAPI backend
 API_BASE = os.environ.get("API_BASE", "http://localhost:8000")
 
+# healthz check
+@app.get("/healthz")
+async def healthz():
+    return PlainTextResponse("ok")
 
 # -----------------------------------
 #  LIFECYCLE

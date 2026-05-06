@@ -1,4 +1,4 @@
-# Dockerfile.ollama
+# docker/Dockerfile.ollama
 
 # extend the official ollama image with curl for healthchecks
 # clean apt cache to keep image small

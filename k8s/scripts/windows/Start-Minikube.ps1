@@ -13,7 +13,7 @@
 
 param(
     [switch]$Gpu,
-    [int]$PodTimeoutSeconds = 120
+    [int]$PodTimeoutSeconds = 300  # 5 min
 )
 
 Set-StrictMode -Version Latest
@@ -47,28 +47,53 @@ function Invoke-Kubectl {
 }
 
 function Wait-PodReady {
-    param([string]$Label)
-    Write-Host "  Waiting for pod ($Label) to be ready..." -NoNewline
+    param(
+        [string]$Label,
+        [int]$ImagePullTimeoutSeconds = 600,
+        [int]$ReadyTimeoutSeconds = 300
+    )
+    Write-Host "  Waiting for pod ($Label) to exist..." -NoNewline
 
-    # Wait for pod to even exist first (up to 60s)
+    # 1. Wait for pod to exist
     $elapsed = 0
     while ($elapsed -lt 60) {
-        $count = kubectl get pod -l $Label -n $Namespace --no-headers 2>$null | Measure-Object -Line
-        if ($count.Lines -gt 0) { break }
+        $podName = kubectl get pod -l $Label -n $Namespace -o jsonpath='{.items[0].metadata.name}' 2>$null
+        if ($podName) { Write-Host " found: $podName" -ForegroundColor Green; break }
         Write-Host "." -NoNewline
         Start-Sleep -Seconds 5
         $elapsed += 5
     }
+    if (-not $podName) { Write-Fail "Pod never appeared"; exit 1 }
 
-    kubectl wait --for=condition=ready pod `
-        -l $Label `
-        -n $Namespace `
-        --timeout="${PodTimeoutSeconds}s"
+    # 2. Wait for Running phase
+    Write-Host "  Waiting for container to start..."
+    $elapsed = 0
+    while ($elapsed -lt $ImagePullTimeoutSeconds) {
+        $phase = kubectl get pod -l $Label -n $Namespace -o jsonpath='{.items[0].status.phase}' 2>$null
+        $reason = kubectl get pod -l $Label -n $Namespace -o jsonpath='{.items[0].status.containerStatuses[0].state.waiting.reason}' 2>$null
+        
+        if ($phase -eq "Running") { Write-Host "  running" -ForegroundColor Green; break }
+        if ($reason -eq "ErrImagePull" -or $reason -eq "ImagePullBackOff") {
+            Write-Fail "Image pull failed: $reason"
+            kubectl describe pod -l $Label -n $Namespace
+            exit 1
+        }
+        Write-Host "." -NoNewline
+        Start-Sleep -Seconds 10
+        $elapsed += 10
+    }
+    if ($elapsed -ge $ImagePullTimeoutSeconds) {
+        Write-Fail "Timed out waiting for pod to start after ${ImagePullTimeoutSeconds}s"
+        kubectl describe pod -l $Label -n $Namespace
+        exit 1
+    }
 
+    # 3. Wait for readiness
+    Write-Host "  Waiting for readiness probe..." -NoNewline
+    kubectl wait --for=condition=ready pod -l $Label -n $Namespace --timeout="${ReadyTimeoutSeconds}s"
     if ($LASTEXITCODE -ne 0) {
         Write-Host ""
-        Write-Fail "Pod $Label did not become ready within ${PodTimeoutSeconds}s"
-        Write-Host "  Describe:"
+        Write-Fail "Pod not ready within ${ReadyTimeoutSeconds}s"
         kubectl describe pod -l $Label -n $Namespace
         exit 1
     }
@@ -98,6 +123,20 @@ Write-Step "Step 1/6 - Starting minikube..."
 minikube start --cpus 4 --memory 8192
 if ($LASTEXITCODE -ne 0) { Write-Fail "minikube start failed"; exit 1 }
 Write-Success "  minikube started"
+
+Write-Host "  Verifying Ollama image in minikube..."
+minikube ssh -- docker images | findstr ollama
+
+Write-Host "  Pre-pulling ollama image into minikube (speed up future pod starts)..."
+minikube ssh -- docker pull ollama/ollama:latest
+Write-Success "  Ollama image cached"
+
+$minikubeMem = minikube config get memory 2>$null
+Write-Host "  Minikube allocated memory: ${minikubeMem}MB"
+if ([int]$minikubeMem -lt 6144) {
+    Write-Host "  WARNING: minikube has less than 6GB RAM. Backend may OOMKill." -ForegroundColor Yellow
+    Write-Host "  Run: minikube delete && minikube start --memory 8192" -ForegroundColor Yellow
+}
 
 
 # -----------------------------------------------------
@@ -190,18 +229,12 @@ Wait-PodReady -Label "app=backend"
 Write-Success "  Backend and frontend deployed"
 
 
-# ----------------------------
-# Step 6: Print access info
-# ----------------------------
-Write-Step "Step 6/6 - Access"
+# -----------------------------------------
+# Step 6: Execute Port-Forwarding script
+# -----------------------------------------
+Write-Step "Step 6/6 - Starting port-forwards..."
 Write-Host ""
-Write-Host "============================================" -ForegroundColor Green
-Write-Success "  Edu-HelpAI is running on minikube!"
-Write-Host "  Open services:"
-Write-Host "  minikube service frontend-service -n $Namespace" -ForegroundColor Yellow
-Write-Host "  minikube service backend-service  -n $Namespace" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "  Or port-forward:"
-Write-Host "  kubectl port-forward svc/frontend-service 8001:8001 -n $Namespace" -ForegroundColor Yellow
-Write-Host "  kubectl port-forward svc/backend-service  8000:8000 -n $Namespace" -ForegroundColor Yellow
-Write-Host "============================================" -ForegroundColor Green
+Write-Host "  Starting Connect-Minikube to forward all services..." -ForegroundColor Cyan
+Write-Host "  (Press Ctrl+C at any time to stop forwarding)" -ForegroundColor Yellow
+
+& "$(Split-Path $PSCommandPath)\Connect-Minikube.ps1" -Namespace $Namespace

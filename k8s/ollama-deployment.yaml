@@ -21,6 +21,7 @@ spec:
       containers:
         - name: ollama
           image: ollama/ollama:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 11434
           volumeMounts:
@@ -30,8 +31,9 @@ spec:
             httpGet:
               path: /api/tags
               port: 11434
-            initialDelaySeconds: 20
-            periodSeconds: 10
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 20
           resources:
             requests:
               memory: "2Gi"

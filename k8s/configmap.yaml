@@ -5,9 +5,17 @@ metadata:
   name: edu-config
   namespace: edu-helpai
 data:
+  # backend settings
   OLLAMA_URL: "http://ollama-service:11434"
-  DATABASE_URL: "sqlite:////data/edu_helpai.db"
-  MLFLOW_TRACKING_URI: "sqlite:////data/mlflow.db"
+  DATABASE_URL: "sqlite:////app/data/edu_helpai.db"
+  MLFLOW_TRACKING_URI: "sqlite:////app/data/mlflow.db"
+
+  # frontend settings
+  CHAINLIT_PORT: "8001"
+  LOG_LEVEL: "INFO"
+
+  # CORS, comma-separated list of allowed origins
+  CORS_ORIGINS: "http://localhost:8001,http://frontend-service:8001,http://127.00.1"
   ENVIRONMENT: "production"
   OLLAMA_MODEL: "mistral:7b"
   EMBEDDING_MODEL: "nomic-embed-text"

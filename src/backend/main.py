@@ -32,11 +32,19 @@ app = FastAPI(title=settings.APP_NAME, version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # local deployment
         "http://localhost:8000", "http://localhost:8001",
-        "http://backend:8000", "http://frontend:8001",  # Docker internal
+        # Docker internal deployment
+        "http://backend:8000", "http://frontend:8001",
+        # k8s internal deployment (clusterip service names)
+        "http://backend-service:8000", "http://frontend-service:8001",
+        # minikube tunnel / port-forward origins
+        "http://localhost", "http://27.0.0.1",
     ],
     allow_methods=["*"],
     allow_headers=["*"],
+    # if chainlit sends cookies/auth headers
+    allow_credentials=True
 )
 
 app.include_router(health.router, prefix="/health", tags=["health"])
