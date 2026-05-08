@@ -20,14 +20,17 @@ kubectl port-forward svc/frontend-service 8001:8001 -n "$NAMESPACE" &
 PIDS+=($!)
 kubectl port-forward svc/backend-service  8000:8000 -n "$NAMESPACE" &
 PIDS+=($!)
+kubectl port-forward svc/mlflow-service   5000:5000  -n "$NAMESPACE" &
+PIDS+=($!)
 kubectl port-forward svc/ollama-service  11434:11434 -n "$NAMESPACE" &
 PIDS+=($!)
 
 echo ""
 echo "============================================"
-echo "  Chat UI   ->  http://localhost:8001"
-echo "  API docs  ->  http://localhost:8000/docs"
-echo "  Ollama    ->  http://localhost:11434"
+echo "  Chat UI      ->  http://localhost:8001"
+echo "  API docs     ->  http://localhost:8000/docs"
+echo "  MLflow Logs  ->  http://localhost:5000"
+echo "  Ollama       ->  http://localhost:11434"
 echo "  Press Ctrl+C to stop."
 echo "============================================"
 

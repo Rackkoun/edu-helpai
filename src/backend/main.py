@@ -39,7 +39,7 @@ app.add_middleware(
         # k8s internal deployment (clusterip service names)
         "http://backend-service:8000", "http://frontend-service:8001",
         # minikube tunnel / port-forward origins
-        "http://localhost", "http://27.0.0.1",
+        "http://localhost", "http://127.0.0.1",
     ],
     allow_methods=["*"],
     allow_headers=["*"],

@@ -157,6 +157,10 @@ if ($LASTEXITCODE -ne 0) { Write-Fail "Backend image build failed"; exit 1 }
 
 docker build -f docker/Dockerfile.frontend -t edu-helpai-frontend:latest .
 if ($LASTEXITCODE -ne 0) { Write-Fail "Frontend image build failed"; exit 1 }
+
+docker build -f docker/Dockerfile.mlflow   -t edu-helpai-mlflow:latest   .
+if ($LASTEXITCODE -ne 0) { Write-Fail "MLflow image build failed";   exit 1 }
+
 Write-Success "  Images built inside minikube"
 
 # ----------------------------------------
@@ -225,8 +229,9 @@ Write-Success "  Ollama ready with models"
 Write-Step "Step 5/6 - Deploying backend and frontend..."
 Invoke-Kubectl @("apply", "-f", "k8s/backend-deployment.yaml")
 Invoke-Kubectl @("apply", "-f", "k8s/frontend-deployment.yaml")
+Invoke-Kubectl @("apply", "-f", "k8s/mlflow-deployment.yaml")
 Wait-PodReady -Label "app=backend"
-Write-Success "  Backend and frontend deployed"
+Write-Success "  Backend, frontend and MLflow deployed"
 
 
 # -----------------------------------------

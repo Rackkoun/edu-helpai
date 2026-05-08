@@ -50,7 +50,14 @@ class RAGService:
 
     def __init__(self) -> None:
         self.embedding_svc = EmbeddingService()
-        self.client = httpx.AsyncClient(timeout=settings.OLLAMA_TIMEOUT)
+        self.client = httpx.AsyncClient(
+            timeout=httpx.Timeout(
+                connect=10.0,
+                read=settings.OLLAMA_TIMEOUT,
+                write=10.0,
+                pool=10.0
+            )
+        )
 
     # --------------------------------------------------------------
     # PUBLIC API

@@ -6,6 +6,7 @@ metadata:
   namespace: edu-helpai
 data:
   # backend settings
+  API_BASE: "http://backend-service:8000"
   OLLAMA_URL: "http://ollama-service:11434"
   DATABASE_URL: "sqlite:////app/data/edu_helpai.db"
   MLFLOW_TRACKING_URI: "sqlite:////app/data/mlflow.db"
@@ -19,3 +20,4 @@ data:
   ENVIRONMENT: "production"
   OLLAMA_MODEL: "mistral:7b"
   EMBEDDING_MODEL: "nomic-embed-text"
+  OLLAMA_TIMEOUT: "600"

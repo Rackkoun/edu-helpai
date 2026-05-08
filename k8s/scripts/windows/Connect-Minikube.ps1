@@ -10,6 +10,7 @@ param(
     [string]$Namespace = "edu-helpai",
     [int]$FrontendPort = 8001,
     [int]$BackendPort  = 8000,
+    [int]$MLflowPort   = 5000,
     [int]$OllamaPort   = 11434
 )
 
@@ -18,6 +19,7 @@ Set-StrictMode -Version Latest
 $forwards = @(
     @{ Service = "frontend-service"; Local = $FrontendPort; Remote = 8001;  Label = "Chat UI " },
     @{ Service = "backend-service";  Local = $BackendPort;  Remote = 8000;  Label = "API     " },
+    @{ Service = "mlflow-service";   Local = $MLflowPort;   Remote = 5000;  Label = "MLflow  " },
     @{ Service = "ollama-service";   Local = $OllamaPort;   Remote = 11434; Label = "Ollama  " }
 )
 
@@ -45,9 +47,10 @@ Write-Host ""
 Write-Host "============================================" -ForegroundColor Green
 Write-Host "  Edu-HelpAI is accessible at:" -ForegroundColor Green
 Write-Host ""
-Write-Host ("  Chat UI   ->  http://localhost:{0}" -f $FrontendPort) -ForegroundColor White
-Write-Host ("  API docs  ->  http://localhost:{0}/docs" -f $BackendPort) -ForegroundColor White
-Write-Host ("  Ollama    ->  http://localhost:{0}" -f $OllamaPort) -ForegroundColor White
+Write-Host ("  Chat UI      ->  http://localhost:{0}" -f $FrontendPort) -ForegroundColor White
+Write-Host ("  API docs     ->  http://localhost:{0}/docs" -f $BackendPort) -ForegroundColor White
+Write-Host ("  MLflow Logs  ->  http://localhost:{0}" -f $MLflowPort) -ForegroundColor White
+Write-Host ("  Ollama       ->  http://localhost:{0}" -f $OllamaPort) -ForegroundColor White
 Write-Host ""
 Write-Host "  Press Ctrl+C to stop all port-forwards." -ForegroundColor Yellow
 Write-Host "============================================" -ForegroundColor Green

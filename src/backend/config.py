@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # ollama
     OLLAMA_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "mistral:7b"
-    OLLAMA_TIMEOUT: int = 120
+    OLLAMA_TIMEOUT: int = 600
 
     # embeddings
     EMBEDDING_MODEL: str = "nomic-embed-text"

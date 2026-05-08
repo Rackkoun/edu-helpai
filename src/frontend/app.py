@@ -14,6 +14,7 @@ os.environ.pop("LITERAL_API_KEY", None)
 from typing import Any
 import uuid
 import httpx
+import json
 import chainlit as cl
 from chainlit.server import app
 from fastapi.responses import PlainTextResponse
@@ -70,8 +71,15 @@ async def on_message(message: cl.Message) -> None:
                 await _handle_file_upload(element)
 
         # if message has only files (no text questions) stop here
-        if not message.content.strip():
-            return
+        if message.content.strip():
+            await cl.Message(
+                content=(
+                    "✅ File processed. "
+                    "Your question has been noted — "
+                    "please send it again as a separate message so I can answer it."
+                )
+            ).send()
+        return   # always return after uploads
 
     # otherwise treat as question
     await _handle_chat(message.content, session_id)
@@ -139,24 +147,33 @@ async def _handle_chat(user_message: str, session_id: str) -> None:
     answer_msg = cl.Message(content="")
     await answer_msg.send()
 
-    async with httpx.AsyncClient(timeout=180.0) as client:
-        async with client.stream(
-            "POST",
-            f"{API_BASE}/chat/message",
-            json={"message": user_message, "session_id": session_id},
-        ) as resp:
-            if not resp.is_success:
-                answer_msg.content = "❌ Backend error. Is the API running?"
-                await answer_msg.update()
-                return
+    try:
+        async with httpx.AsyncClient(timeout=600.0) as client:
+            async with client.stream(
+                "POST",
+                f"{API_BASE}/chat/message",
+                json={"message": user_message, "session_id": session_id},
+            ) as resp:
+                if not resp.is_success:
+                    answer_msg.content = "❌ Backend error. Is the API running?"
+                    await answer_msg.update()
+                    return
 
-            async for line in resp.aiter_lines():
-                if not line.startswith("data: "):
-                    continue
+                async for line in resp.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    token = line[6:]
+                    if token == "[DONE]":
+                        break
+                    answer_msg.content += token
+                    await answer_msg.update()
 
-                token = line[6:]  # strip "data: "
-                if token == "[DONE]":
-                    break
-
-                answer_msg.content += token
-                await answer_msg.update()
+    except httpx.ReadTimeout:
+        answer_msg.content = (
+            "⏱️ Ollama is taking too long to respond. "
+            "The model may still be loading. Please try again in ~30 seconds."
+        )
+        await answer_msg.update()
+    except httpx.RemoteProtocolError as e:
+        answer_msg.content = f"⚠️ Connection interrupted: {e}. Please try again."
+        await answer_msg.update()
