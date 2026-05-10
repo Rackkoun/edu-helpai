@@ -152,6 +152,9 @@ async def test_save_turn_persists_to_db() -> None:
     rag = RAGService.__new__(RAGService)
 
     mock_session = AsyncMock()
+    mock_session.add = MagicMock()
+    mock_session.commit = AsyncMock()
+
     mock_cm = MagicMock()
     mock_cm.__aenter__ = AsyncMock(return_value=mock_session)
     mock_cm.__aexit__ = AsyncMock(return_value=False)

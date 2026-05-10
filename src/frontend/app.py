@@ -4,6 +4,7 @@ Edu-HelpAI UI
 
 RUN with chainlit src/frontend/app.py --port 8001
 """
+
 # flake8: noqa: E402
 import os
 
@@ -22,10 +23,12 @@ from fastapi.responses import PlainTextResponse
 #  FastAPI backend
 API_BASE = os.environ.get("API_BASE", "http://localhost:8000")
 
+
 # healthz check
 @app.get("/healthz")
-async def healthz():
+async def healthz() -> PlainTextResponse:
     return PlainTextResponse("ok")
+
 
 # -----------------------------------
 #  LIFECYCLE
@@ -79,7 +82,7 @@ async def on_message(message: cl.Message) -> None:
                     "please send it again as a separate message so I can answer it."
                 )
             ).send()
-        return   # always return after uploads
+        return  # always return after uploads
 
     # otherwise treat as question
     await _handle_chat(message.content, session_id)

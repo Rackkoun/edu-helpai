@@ -158,7 +158,9 @@ async def test_embed_document_success() -> None:
 
     async def override_get_db() -> AsyncGenerator[AsyncMock, None]:
         mock_session = AsyncMock()
-        mock_result = AsyncMock()
+        mock_session.add = MagicMock()
+
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = MagicMock()  # doc exists
         mock_session.execute = AsyncMock(return_value=mock_result)
         yield mock_session

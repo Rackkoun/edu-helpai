@@ -11,11 +11,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ollama-gpu
+      app: ollama
   template:
     metadata:
       labels:
-        app: ollama-gpu
+        app: ollama
+        profile: gpu
     spec:
       containers:
         - name: ollama
@@ -26,12 +27,25 @@ spec:
           volumeMounts:
             - name: ollama-models
               mountPath: /root/.ollama
+          env:
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: "all"
           resources:
             limits:
               nvidia.com/gpu: 1  # request 1 GPU
+              cpu: "4"
+              memory: "8Gi"
             requests:
+              nvidia.com/gpu: 1
               memory: "4Gi"
               cpu: "2"
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 20
       volumes:
         - name: ollama-models
           persistentVolumeClaim:
@@ -44,7 +58,7 @@ metadata:
   namespace: edu-helpai
 spec:
   selector:
-    app: ollama-gpu
+    app: ollama
   ports:
     - port: 11434
       targetPort: 11434

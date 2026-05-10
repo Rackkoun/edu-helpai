@@ -47,7 +47,7 @@ spec:
             mountPath: /app/data
           # writable location for Chainlit runtime files
           - name: tmp-chainlit
-            mountPath: /app/.chainlit
+            mountPath: /app/.chainlit/cache
         livenessProbe:
           httpGet:
             path: /healthz

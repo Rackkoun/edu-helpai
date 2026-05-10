@@ -44,18 +44,21 @@ class RAGService:
     SYSTEM_PROMPT = """
         You are Edu-HelpAI, a helpful study assistant.
         Answer questions based ONLY on the provided context.
-        If the context doesn't contain the answer, say so honestly do not guess.
+        If the context doesn't contain the answer, say so honestly, do not guess.
         Cite which document/chunk you used when possible.
+
+        IMPORTANT: Always repond in the same language the user used in their question.
+        If the user writes in French, respond in French.
+        If the user writes in German, respond in German.
+        If the user writes in English, respond in English.
+        Never switch languages mid-response.
     """
 
     def __init__(self) -> None:
         self.embedding_svc = EmbeddingService()
         self.client = httpx.AsyncClient(
             timeout=httpx.Timeout(
-                connect=10.0,
-                read=settings.OLLAMA_TIMEOUT,
-                write=10.0,
-                pool=10.0
+                connect=10.0, read=settings.OLLAMA_TIMEOUT, write=10.0, pool=10.0
             )
         )
 

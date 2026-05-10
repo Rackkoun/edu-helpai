@@ -67,9 +67,6 @@ async def test_process_upload_txt(
     processor: DocumentProcessor, db_session: AsyncSession
 ) -> None:
     """Full upload pipeline for .txt file. Mock get_session to the test db"""
-    # mock_cm = MagicMock()
-    # mock_cm.return_value.__aenter__ = AsyncMock(return_value=db_session)
-    # mock_cm.return_value.__aexit__ = AsyncMock(return_value=False)
 
     @asynccontextmanager
     async def fake_get_session() -> AsyncGenerator[AsyncSession, None]:
@@ -89,9 +86,6 @@ async def test_process_upload_creates_file_on_disk(
 ) -> None:
     """Uploaded file should be persisted to disk"""
 
-    # mock_cm = MagicMock()
-    # mock_cm.return_value.__aenter__ = AsyncMock(return_value=db_session)
-    # mock_cm.return_value.__aexit__ = AsyncMock(return_value=False)
     @asynccontextmanager
     async def fake_get_session() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
@@ -109,9 +103,6 @@ async def test_process_upload_sanitize_filename(
 ) -> None:
     """Dangerous characters in filenames should be stripped"""
 
-    # mock_cm = MagicMock()
-    # mock_cm.return_value.__aenter__ = AsyncMock(return_value=db_session)
-    # mock_cm.return_value.__aexit__ = AsyncMock(return_value=False)
     @asynccontextmanager
     async def fake_get_session() -> AsyncGenerator[AsyncSession, None]:
         yield db_session
