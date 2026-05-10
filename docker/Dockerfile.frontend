@@ -9,8 +9,9 @@ COPY src/frontend ./src/frontend
 
 # config dir for chainlit
 RUN mkdir -p /app/.chainlit/translations
-# COPY chainlit translations
-COPY .chainlit/translations/ /app/.chainlit/translations/
+# translation dir removed and minimal translation added
+RUN mkdir -p /app/.chainlit/translations && \
+    echo '{"components": {}}' > /app/.chainlit/translations/en-US.json
 
 EXPOSE 8001
 CMD [ "chainlit", "run", "src/frontend/app.py", "--port", "8001", "--host", "0.0.0.0" ]
