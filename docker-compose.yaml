@@ -1,0 +1,106 @@
+# docker-compose.yaml
+
+services:
+  # Ollama : LLM server (CPU-Only default always starts)
+  ollama:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ollama
+    container_name: edu_ollama
+    volumes:
+      - ollama_data:/root/.ollama  # persist downloaded model
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s  # wait before first check
+  
+  # Ollama GPU: only when --profile gpu is passed
+  ollama-gpu:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.ollama
+    container_name: edu_ollama  # same name -> replace cpu one
+    profiles: [gpu]
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
+  # FastAPI backend
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: edu_backend
+    env_file:
+      - .env  # read local .env file
+    environment:  # override specific vars for the container network
+      - OLLAMA_URL=http://ollama:11434
+      - DATABASE_URL=sqlite:////app/data/edu_helpai.db
+      - MLFLOW_TRACKING_URI=sqlite:////app/data/mlflow.db
+    volumes:
+      - app_data:/app/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 50s
+  
+  # Chainlit frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: edu_frontend
+    environment:
+      - API_BASE=http://backend:8000
+    ports:
+      - "8001:8001"
+    depends_on:
+      backend:
+        condition: service_healthy
+  
+  # MLflow UI
+  mlflow:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.mlflow
+    container_name: edu_mlflow
+    volumes:
+      - app_data:/data
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      - backend
+
+volumes:
+  ollama_data:
+  app_data:

@@ -1,0 +1,92 @@
+# k8s/frontend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: edu-helpai
+  annotations:
+    kubernetes.io/description: "Chainlit UI frontend for Edu-HelpAI"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: edu-helpai-frontend:latest
+        imagePullPolicy: Never
+        ports:
+          - containerPort: 8001
+            name: http
+        envFrom:
+          - configMapRef:
+              name: edu-config
+        env:
+          # Backend API URL for server-side calls (if any)
+          - name: API_BASE
+            value: "http://backend-service:8000"
+          # Chainlit-specific settings
+          - name: CHAINLIT_HOST
+            value: "0.0.0.0"
+          - name: CHAINLIT_PORT
+            value: "8001"
+          # Auth secret for Chainlit sessions
+          - name: CHAINLIT_AUTH_SECRET
+            valueFrom:
+              secretKeyRef:
+                key: SECRET_KEY
+                name: edu-secrets
+        volumeMounts:
+          # shared data volume (uploads, DB, etc.)
+          - name: app-data
+            mountPath: /app/data
+          # writable location for Chainlit runtime files
+          - name: tmp-chainlit
+            mountPath: /app/.chainlit/cache
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+      volumes:
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: app-data-pvc
+        - name: tmp-chainlit
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: edu-helpai
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 8001
+      targetPort: 8001
+      name: http

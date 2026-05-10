@@ -1,0 +1,16 @@
+# docker/Dockerfile.frontend
+FROM python:3.11.3-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir chainlit==2.11.1 httpx==0.28.1
+
+COPY src/frontend ./src/frontend
+
+# config dir for chainlit
+RUN mkdir -p /app/.chainlit/translations
+# COPY chainlit translations
+COPY .chainlit/translations/ /app/.chainlit/translations/
+
+EXPOSE 8001
+CMD [ "chainlit", "run", "src/frontend/app.py", "--port", "8001", "--host", "0.0.0.0" ]
