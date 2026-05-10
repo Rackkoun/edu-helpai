@@ -85,8 +85,8 @@ jobs:
       - name: Build Backend Image
         uses: docker/build-push-action@v5
         with:
-          context: docker/
-          file: Dockerfile.backend
+          context: .
+          file: docker/Dockerfile.backend
           push: false
           tags: edu-helpai-backend:${{ github.sha }}
           cache-from: type=gha
@@ -95,9 +95,31 @@ jobs:
       - name: Build Frontend Image
         uses: docker/build-push-action@v5
         with:
-          context: docker/
-          file: Dockerfile.frontend
+          context: .
+          file: docker/Dockerfile.frontend
           push: false
           tags: edu-helpai-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # MLflow: verify custom image builds
+      - name: Build MLflow Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.mlflow
+          push: false
+          tags: edu-helpai-mlflow:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      # Ollama: verify custom image with curl builds
+      - name: Build Ollama Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.ollama
+          push: false
+          tags: edu-helpai-ollama:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
